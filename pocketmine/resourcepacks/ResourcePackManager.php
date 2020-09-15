@@ -208,16 +208,6 @@ class ResourcePackManager
 		return $this->resourcePacks;
 	}
 
-	public function hasClientScripts(): bool
-	{
-		return $this->serverHasClientScripts;
-	}
-
-	public function getBehaviorStack(): array
-	{
-		return $this->behaviorPacks;
-	}
-
 	/**
 	 * Returns the resource pack matching the specified UUID string, or null if the ID was not recognized.
 	 *
