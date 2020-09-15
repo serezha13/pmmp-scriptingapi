@@ -35,7 +35,8 @@ use function mkdir;
 use function strtolower;
 use const DIRECTORY_SEPARATOR;
 
-class ResourcePackManager{
+class ResourcePackManager
+{
 
 	/** @var string */
 	private $path;
@@ -49,86 +50,152 @@ class ResourcePackManager{
 	/** @var ResourcePack[] */
 	private $uuidList = [];
 
+	private $serverHasClientScripts = false;
+	private $behaviorPacks = [];
+
 	/**
-	 * @param string  $path Path to resource-packs directory.
+	 * @param string $path Path to resource-packs directory.
 	 */
-	public function __construct(string $path, \Logger $logger){
+	public function __construct(string $path, \Logger $logger)
+	{
 		$this->path = $path;
 
-		if(!file_exists($this->path)){
+		if (!file_exists($this->path)) {
 			$logger->debug("Resource packs path $path does not exist, creating directory");
 			mkdir($this->path);
-		}elseif(!is_dir($this->path)){
+		} elseif (!is_dir($this->path)) {
 			throw new \InvalidArgumentException("Resource packs path $path exists and is not a directory");
 		}
 
-		if(!file_exists($this->path . "resource_packs.yml")){
+		if (!file_exists($this->path . "resource_packs.yml")) {
 			copy(\pocketmine\RESOURCE_PATH . "resource_packs.yml", $this->path . "resource_packs.yml");
 		}
 
 		$resourcePacksConfig = new Config($this->path . "resource_packs.yml", Config::YAML, []);
 
-		$this->serverForceResources = (bool) $resourcePacksConfig->get("force_resources", false);
+		$this->serverForceResources = (bool)$resourcePacksConfig->get("force_resources", false);
 
 		$logger->info("Loading resource packs...");
 
 		$resourceStack = $resourcePacksConfig->get("resource_stack", []);
-		if(!is_array($resourceStack)){
+		if (!is_array($resourceStack)) {
 			throw new \InvalidArgumentException("\"resource_stack\" key should contain a list of pack names");
 		}
 
-		foreach($resourceStack as $pos => $pack){
-			try{
-				$pack = (string) $pack;
-			}catch(\ErrorException $e){
+		foreach ($resourceStack as $pos => $pack) {
+			try {
+				$pack = (string)$pack;
+			} catch (\ErrorException $e) {
 				$logger->critical("Found invalid entry in resource pack list at offset $pos of type " . gettype($pack));
 				continue;
 			}
-			try{
+			try {
 				/** @var string $pack */
 				$packPath = $this->path . DIRECTORY_SEPARATOR . $pack;
-				if(!file_exists($packPath)){
+				if (!file_exists($packPath)) {
 					throw new ResourcePackException("File or directory not found");
 				}
-				if(is_dir($packPath)){
+				if (is_dir($packPath)) {
 					throw new ResourcePackException("Directory resource packs are unsupported");
 				}
 
 				$newPack = null;
 				//Detect the type of resource pack.
 				$info = new \SplFileInfo($packPath);
-				switch($info->getExtension()){
+				switch ($info->getExtension()) {
 					case "zip":
 					case "mcpack":
 						$newPack = new ZippedResourcePack($packPath);
 						break;
 				}
 
-				if($newPack instanceof ResourcePack){
+				if ($newPack instanceof ResourcePack) {
 					$this->resourcePacks[] = $newPack;
 					$this->uuidList[strtolower($newPack->getPackId())] = $newPack;
-				}else{
+				} else {
 					throw new ResourcePackException("Format not recognized");
 				}
-			}catch(ResourcePackException $e){
+			} catch (ResourcePackException $e) {
 				$logger->critical("Could not load resource pack \"$pack\": " . $e->getMessage());
 			}
 		}
 
 		$logger->debug("Successfully loaded " . count($this->resourcePacks) . " resource packs");
+
+		$logger->info("Loading behavior packs...");
+
+		$behaviorStack = $resourcePacksConfig->get("behavior_stack", []);
+		if (!is_array($behaviorStack)) {
+			throw new \InvalidArgumentException("\"behavior_stack\" key should contain a list of pack names");
+		}
+
+		foreach ($behaviorStack as $pos => $pack) {
+			try {
+				$pack = (string)$pack;
+			} catch (\ErrorException $e) {
+				$logger->critical("Found invalid entry in behavior pack list at offset $pos of type " . gettype($pack));
+				continue;
+			}
+			try {
+				/** @var string $pack */
+				$packPath = $this->path . DIRECTORY_SEPARATOR . $pack;
+				if (!file_exists($packPath)) {
+					throw new ResourcePackException("File or directory not found");
+				}
+				if (is_dir($packPath)) {
+					throw new ResourcePackException("Directory behavior packs are unsupported");
+				}
+
+				$newPack = null;
+				//Detect the type of resource pack.
+				$info = new \SplFileInfo($packPath);
+				switch ($info->getExtension()) {
+					case "zip":
+					case "mcpack":
+						$newPack = new ZippedBehaviorPack($packPath);
+						break;
+				}
+
+				if ($newPack instanceof BehaviorPack) {
+					$this->behaviorPacks[] = $newPack;
+					$this->uuidList[strtolower($newPack->getPackId())] = $newPack;
+
+					if ($newPack->hasClientScripts()) {
+						$this->serverHasClientScripts = true;
+					}
+				} else {
+					throw new ResourcePackException("Format not recognized");
+				}
+			} catch (ResourcePackException $e) {
+				$logger->critical("Could not load behavior pack \"$pack\": " . $e->getMessage());
+			}
+		}
+
+		$logger->debug("Successfully loaded " . count($this->behaviorPacks) . " behavior packs");
+	}
+
+	public function hasClientScripts(): bool
+	{
+		return $this->serverHasClientScripts;
+	}
+
+	public function getBehaviorStack() : array{
+		return $this->behaviorPacks;
 	}
 
 	/**
 	 * Returns the directory which resource packs are loaded from.
 	 */
-	public function getPath() : string{
+	public function getPath(): string
+	{
 		return $this->path;
 	}
 
 	/**
 	 * Returns whether players must accept resource packs in order to join.
 	 */
-	public function resourcePacksRequired() : bool{
+	public function resourcePacksRequired(): bool
+	{
 		return $this->serverForceResources;
 	}
 
@@ -136,8 +203,19 @@ class ResourcePackManager{
 	 * Returns an array of resource packs in use, sorted in order of priority.
 	 * @return ResourcePack[]
 	 */
-	public function getResourceStack() : array{
+	public function getResourceStack(): array
+	{
 		return $this->resourcePacks;
+	}
+
+	public function hasClientScripts(): bool
+	{
+		return $this->serverHasClientScripts;
+	}
+
+	public function getBehaviorStack(): array
+	{
+		return $this->behaviorPacks;
 	}
 
 	/**
@@ -145,7 +223,8 @@ class ResourcePackManager{
 	 *
 	 * @return ResourcePack|null
 	 */
-	public function getPackById(string $id){
+	public function getPackById(string $id)
+	{
 		return $this->uuidList[strtolower($id)] ?? null;
 	}
 
@@ -153,7 +232,8 @@ class ResourcePackManager{
 	 * Returns an array of pack IDs for packs currently in use.
 	 * @return string[]
 	 */
-	public function getPackIdList() : array{
+	public function getPackIdList(): array
+	{
 		return array_keys($this->uuidList);
 	}
 }

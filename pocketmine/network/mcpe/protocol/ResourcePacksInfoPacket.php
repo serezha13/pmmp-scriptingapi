@@ -26,6 +26,7 @@ namespace pocketmine\network\mcpe\protocol;
 #include <rules/DataPacket.h>
 
 use pocketmine\network\mcpe\NetworkSession;
+use pocketmine\resourcepacks\BehaviorPack;
 use pocketmine\resourcepacks\ResourcePack;
 use function count;
 
@@ -36,7 +37,7 @@ class ResourcePacksInfoPacket extends DataPacket{
 	public $mustAccept = false; //if true, forces client to use selected resource packs
 	/** @var bool */
 	public $hasScripts = false; //if true, causes disconnect for any platform that doesn't support scripts yet
-	/** @var ResourcePack[] */
+	/** @var BehaviorPack[] */
 	public $behaviorPackEntries = [];
 	/** @var ResourcePack[] */
 	public $resourcePackEntries = [];
@@ -78,7 +79,7 @@ class ResourcePacksInfoPacket extends DataPacket{
 			$this->putString(""); //TODO: encryption key
 			$this->putString(""); //TODO: subpack name
 			$this->putString(""); //TODO: content identity
-			$this->putBool(false); //TODO: has scripts (?)
+			$this->putBool($entry->hasClientScripts()); //TODO: has scripts (?)
 		}
 		$this->putLShort(count($this->resourcePackEntries));
 		foreach($this->resourcePackEntries as $entry){

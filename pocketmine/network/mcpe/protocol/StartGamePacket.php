@@ -114,7 +114,8 @@ class StartGamePacket extends DataPacket{
 	 * @phpstan-var array<string, array{0: int, 1: bool|int|float}>
 	 */
 	public $gameRules = [ //TODO: implement this
-		"naturalregeneration" => [GameRuleType::BOOL, false] //Hack for client side regeneration
+		"naturalregeneration" => [GameRuleType::BOOL, false], //Hack for client side regeneration
+		"experimentalgameplay" => [1, true] // Enables client-side scripts
 	];
 	/** @var bool */
 	public $hasBonusChestEnabled = false;

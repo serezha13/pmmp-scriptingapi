@@ -2130,6 +2130,8 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 		$pk = new ResourcePacksInfoPacket();
 		$manager = $this->server->getResourcePackManager();
 		$pk->resourcePackEntries = $manager->getResourceStack();
+		$pk->behaviorPackEntries = $manager->getBehaviorStack();
+		$pk->hasScripts = $manager->hasClientScripts();
 		$pk->mustAccept = $manager->resourcePacksRequired();
 		$this->dataPacket($pk);
 	}
@@ -2175,6 +2177,8 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 				$pk = new ResourcePackStackPacket();
 				$manager = $this->server->getResourcePackManager();
 				$pk->resourcePackStack = $manager->getResourceStack();
+				$pk->behaviorPackStack = $manager->getBehaviorStack();
+				$pk->isExperimental = true;
 				//we don't force here, because it doesn't have user-facing effects
 				//but it does have an annoying side-effect when true: it makes
 				//the client remove its own non-server-supplied resource packs.
