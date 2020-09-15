@@ -63,6 +63,7 @@ use pocketmine\event\player\PlayerMoveEvent;
 use pocketmine\event\player\PlayerPreLoginEvent;
 use pocketmine\event\player\PlayerQuitEvent;
 use pocketmine\event\player\PlayerRespawnEvent;
+use pocketmine\event\player\PlayerScriptEvent;
 use pocketmine\event\player\PlayerToggleFlightEvent;
 use pocketmine\event\player\PlayerToggleSneakEvent;
 use pocketmine\event\player\PlayerToggleSprintEvent;
@@ -137,6 +138,7 @@ use pocketmine\network\mcpe\protocol\ResourcePackDataInfoPacket;
 use pocketmine\network\mcpe\protocol\ResourcePacksInfoPacket;
 use pocketmine\network\mcpe\protocol\ResourcePackStackPacket;
 use pocketmine\network\mcpe\protocol\RespawnPacket;
+use pocketmine\network\mcpe\protocol\ScriptCustomEventPacket;
 use pocketmine\network\mcpe\protocol\SetPlayerGameTypePacket;
 use pocketmine\network\mcpe\protocol\SetSpawnPositionPacket;
 use pocketmine\network\mcpe\protocol\SetTitlePacket;
@@ -2972,6 +2974,24 @@ class Player extends Human implements CommandSender, ChunkLoader, IPlayer{
 
 		return true;
 	}
+
+	public function handleScriptCustomEvent(ScriptCustomEventPacket $packet) : bool{
+		$eventName = $packet->eventName;
+		$eventData = json_decode($packet->eventData);
+
+		$ev = new PlayerScriptEvent($this, $eventName, $eventData);
+		$ev->call();
+
+		return true;
+	}
+
+	public function sendScriptCustomEvent(string $scriptEventName, $scriptEventData) : void{
+		$pk = new ScriptCustomEventPacket();
+		$pk->eventName = $scriptEventName;
+		$pk->eventData = json_encode($scriptEventData);
+		$this->dataPacket($pk);
+	}
+
 
 	public function toggleSprint(bool $sprint) : void{
 		$ev = new PlayerToggleSprintEvent($this, $sprint);

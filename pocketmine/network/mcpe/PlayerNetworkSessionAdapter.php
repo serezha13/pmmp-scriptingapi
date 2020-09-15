@@ -59,6 +59,7 @@ use pocketmine\network\mcpe\protocol\RequestChunkRadiusPacket;
 use pocketmine\network\mcpe\protocol\ResourcePackChunkRequestPacket;
 use pocketmine\network\mcpe\protocol\ResourcePackClientResponsePacket;
 use pocketmine\network\mcpe\protocol\RespawnPacket;
+use pocketmine\network\mcpe\protocol\ScriptCustomEventPacket;
 use pocketmine\network\mcpe\protocol\ServerSettingsRequestPacket;
 use pocketmine\network\mcpe\protocol\SetLocalPlayerAsInitializedPacket;
 use pocketmine\network\mcpe\protocol\SetPlayerGameTypePacket;
@@ -112,6 +113,11 @@ class PlayerNetworkSessionAdapter extends NetworkSession{
 		}
 
 		$timings->stopTiming();
+	}
+
+	public function handleScriptCustomEvent(ScriptCustomEventPacket $packet): bool
+	{
+		return $this->player->handleScriptCustomEvent($packet);
 	}
 
 	public function handleLogin(LoginPacket $packet) : bool{
